@@ -2,13 +2,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Quote } from './entities/quote.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { QuoteImportDto } from './dto/quote-import.dto';
 import { pagination } from '../utils/pagination';
 import { Vote } from './vote.enum';
 
 export type OrderField = 'rating' | 'id' | 'date';
-export type OrderDirection = 'asc' | 'desc';
+export type OrderDirection = 'ASC' | 'DESC';
 export type Order = {
   field: OrderField;
   dir: OrderDirection;
@@ -16,8 +16,13 @@ export type Order = {
 
 const defaultOrder: Order = {
   field: 'id',
-  dir: 'asc',
+  dir: 'ASC',
 };
+
+interface QueryOptions {
+  where?: FindOptionsWhere<Quote> | Array<[string, Record<string, string>]>;
+  order?: Record<OrderField, OrderDirection>;
+}
 
 @Injectable()
 export class QuoteService {
@@ -38,22 +43,51 @@ export class QuoteService {
     return this.quotesRepository.find();
   }
 
+  search(query: string, page = 1) {
+    if (query.length < 3) {
+      throw new BadRequestException('Минимум 3 символа, ну камон');
+    }
+
+    return this.query(page, {
+      where: [['to_tsvector("text") @@ plainto_tsquery(:query)', { query }]],
+      ...this.order({ field: 'rating', dir: 'DESC' }),
+    });
+  }
+
   getPage(page: number, order = defaultOrder) {
     if (page < 1) {
       throw new BadRequestException('Page should be greater than 1.');
     }
 
-    const mergedOrder =
-      order === defaultOrder ? order : { ...defaultOrder, ...order };
+    return this.query(page, this.order(order));
+  }
 
-    const listQuery = this.quotesRepository.find({
-      skip: QuoteService.PER_PAGE * (page - 1),
-      take: QuoteService.PER_PAGE,
-      order: {
-        [mergedOrder.field]: mergedOrder.dir,
-      },
-    });
-    const totalQuery = this.quotesRepository.count();
+  private query(page: number, options: QueryOptions) {
+    const listBuilder = this.quotesRepository.createQueryBuilder();
+
+    if (Array.isArray(options.where) && options.where.length) {
+      listBuilder.where(...options.where[0]);
+      if (options.where.length > 1) {
+        options.where.slice(1).forEach((option) => {
+          listBuilder.andWhere(...option);
+        });
+      }
+    }
+
+    listBuilder
+      .skip(QuoteService.PER_PAGE * (page - 1))
+      .take(QuoteService.PER_PAGE);
+
+    if (options.order) {
+      listBuilder.orderBy(options.order);
+    }
+
+    const totalBuilder = listBuilder.clone();
+
+    const listQuery = listBuilder.getMany();
+    const totalQuery = totalBuilder.getCount();
+    console.log(listBuilder.getQuery());
+    console.log(totalBuilder.getQuery());
 
     return Promise.all([listQuery, totalQuery]).then(([list, total]) => {
       return {
@@ -65,6 +99,17 @@ export class QuoteService {
         }),
       };
     });
+  }
+
+  private order(order = defaultOrder) {
+    const mergedOrder =
+      order === defaultOrder ? order : { ...defaultOrder, ...order };
+
+    return {
+      order: {
+        [mergedOrder.field]: mergedOrder.dir,
+      } as Record<OrderField, OrderDirection>,
+    };
   }
 
   findOne(id: number) {

@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -32,14 +33,22 @@ export class QuoteController {
     return this.quoteService.vote(id, Vote.DOWN);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quoteService.findOne(+id);
+  @Get('/search')
+  search(@Query('query') query: string) {
+    console.log('search');
+    return this.quoteService.search(query);
   }
 
   @Get('/page/:page?')
   getPage(@Param('page') page: number) {
+    console.log('getPage');
     return this.quoteService.getPage(page || 1);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    console.log('findOne');
+    return this.quoteService.findOne(+id);
   }
 
   @Post('import')
