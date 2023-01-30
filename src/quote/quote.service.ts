@@ -1,11 +1,23 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateQuoteDto } from './dto/create-quote.dto';
-import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Quote } from './entities/quote.entity';
 import { Repository } from 'typeorm';
 import { QuoteImportDto } from './dto/quote-import.dto';
 import { pagination } from '../utils/pagination';
+import { Vote } from './vote.enum';
+
+export type OrderField = 'rating' | 'id' | 'date';
+export type OrderDirection = 'asc' | 'desc';
+export type Order = {
+  field: OrderField;
+  dir: OrderDirection;
+};
+
+const defaultOrder: Order = {
+  field: 'id',
+  dir: 'asc',
+};
 
 @Injectable()
 export class QuoteService {
@@ -26,14 +38,20 @@ export class QuoteService {
     return this.quotesRepository.find();
   }
 
-  getPage(page: number) {
+  getPage(page: number, order = defaultOrder) {
     if (page < 1) {
       throw new BadRequestException('Page should be greater than 1.');
     }
 
+    const mergedOrder =
+      order === defaultOrder ? order : { ...defaultOrder, ...order };
+
     const listQuery = this.quotesRepository.find({
       skip: QuoteService.PER_PAGE * (page - 1),
       take: QuoteService.PER_PAGE,
+      order: {
+        [mergedOrder.field]: mergedOrder.dir,
+      },
     });
     const totalQuery = this.quotesRepository.count();
 
@@ -51,10 +69,6 @@ export class QuoteService {
 
   findOne(id: number) {
     return this.quotesRepository.findOneOrFail({ where: { id } });
-  }
-
-  update(id: number, updateQuoteDto: UpdateQuoteDto) {
-    return `This action updates a #${id} quote`;
   }
 
   remove(id: number) {
@@ -80,5 +94,12 @@ export class QuoteService {
     }
 
     return true;
+  }
+
+  async vote(id: number, vote: Vote) {
+    const quote = await this.quotesRepository.findOne({ where: { id } });
+    quote.rating = vote === Vote.UP ? quote.rating + 1 : quote.rating - 1;
+
+    return this.quotesRepository.save(quote);
   }
 }

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -10,13 +11,7 @@ import {
 import { QuoteService } from './quote.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-
-type ImportedQuote = Array<{
-  id: number;
-  text: string;
-  rating: number;
-  date: string;
-}>;
+import { Vote } from './vote.enum';
 
 @Controller('quotes')
 export class QuoteController {
@@ -25,6 +20,16 @@ export class QuoteController {
   @Post()
   create(@Body() createQuoteDto: CreateQuoteDto) {
     return this.quoteService.create(createQuoteDto);
+  }
+
+  @Patch('/vote/:id/up')
+  voteUp(@Param('id') id: number) {
+    return this.quoteService.vote(id, Vote.UP);
+  }
+
+  @Patch('/vote/:id/down')
+  voteDown(@Param('id') id: number) {
+    return this.quoteService.vote(id, Vote.DOWN);
   }
 
   @Get(':id')
