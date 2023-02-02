@@ -54,6 +54,13 @@ export class QuoteService {
     });
   }
 
+  async getPageByRating(page: number, dir: OrderDirection = 'DESC') {
+    return this.getPage(page, {
+      field: 'rating',
+      dir,
+    });
+  }
+
   getPage(page: number, order = defaultOrder) {
     if (page < 1) {
       throw new BadRequestException('Page should be greater than 1.');
