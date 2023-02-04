@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 
@@ -12,7 +12,6 @@ async function bootstrap() {
           cert: fs.readFileSync('./cert.crt'),
         }
       : undefined;
-
   const app = await NestFactory.create(AppModule, {
     httpsOptions,
   });
@@ -23,6 +22,8 @@ async function bootstrap() {
   );
   app.enableCors();
 
+  const logger = app.get(Logger);
+  logger.log('HTTPS options', httpsOptions);
   const configService = app.get(ConfigService);
   const APP_PORT = configService.get<number>('APP_PORT');
 
