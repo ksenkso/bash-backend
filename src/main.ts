@@ -2,9 +2,20 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const httpsOptions =
+    process.env.NODE_ENV === 'production'
+      ? {
+          key: fs.readFileSync('./cert.key'),
+          cert: fs.readFileSync('./cert.crt'),
+        }
+      : undefined;
+
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
