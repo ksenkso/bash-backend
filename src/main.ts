@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 
@@ -22,8 +22,7 @@ async function bootstrap() {
   );
   app.enableCors();
 
-  const logger = app.get(Logger);
-  logger.log('HTTPS options', httpsOptions);
+  console.log('HTTPS options', httpsOptions);
   const configService = app.get(ConfigService);
   const APP_PORT = configService.get<number>('APP_PORT');
 
