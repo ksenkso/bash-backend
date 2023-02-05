@@ -40,6 +40,11 @@ export class QuoteController {
     return this.quoteService.search(query);
   }
 
+  @Get('/random')
+  randomQuote(@Query('minRating') minRating?: number) {
+    return this.quoteService.getRandomQuote(minRating);
+  }
+
   @Get('/page/:page?')
   listById(@PageParam() page: number, @OrderParam() order: Order) {
     return this.quoteService.getPage(page, order);

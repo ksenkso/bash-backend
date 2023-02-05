@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Quote } from './entities/quote.entity';
@@ -153,5 +153,25 @@ export class QuoteService {
     quote.rating = vote === Vote.UP ? quote.rating + 1 : quote.rating - 1;
 
     return this.quotesRepository.save(quote);
+  }
+
+  async getRandomQuote(minRating?: number): Promise<Quote> {
+    const builder = this.quotesRepository.createQueryBuilder('quote');
+
+    builder
+      .limit(1)
+      .orderBy('random()');
+
+    if (minRating) {
+      builder.where('quote.rating >= :rating', { rating: minRating });
+    }
+
+    const quote = await builder.getOne();
+
+    if (!quote) {
+      throw new NotFoundException();
+    }
+
+    return quote;
   }
 }
