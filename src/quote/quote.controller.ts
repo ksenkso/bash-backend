@@ -7,14 +7,15 @@ import {
   Post,
   Query,
   UploadedFile,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
-import { Order, QuoteService } from './quote.service';
+import { Order, QuoteService, QuoteYear } from './quote.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Vote } from './vote.enum';
 import { PageParam } from '../utils/page-param.decorator';
 import { OrderParam } from '../utils/order-param';
+import { YearParam } from '../utils/year-param.decorator';
 
 @Controller('quotes')
 export class QuoteController {
@@ -48,6 +49,11 @@ export class QuoteController {
   @Get('/page/:page?')
   listById(@PageParam() page: number, @OrderParam() order: Order) {
     return this.quoteService.getPage(page, order);
+  }
+
+  @Get('/year/:year/page/:page?')
+  yearListById(@YearParam() year: QuoteYear, @PageParam() page: number, @OrderParam() order: Order) {
+    return this.quoteService.byYear(year, page, order);
   }
 
   @Get(':id')

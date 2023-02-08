@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Quote } from './entities/quote.entity';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, Repository } from 'typeorm';
 import { QuoteImportDto } from './dto/quote-import.dto';
 import { pagination } from '../utils/pagination';
 import { Vote } from './vote.enum';
@@ -23,6 +23,9 @@ interface QueryOptions {
   where?: FindOptionsWhere<Quote> | Array<[string, Record<string, string>]>;
   order?: Record<OrderField, OrderDirection>;
 }
+
+export type YearAlias = 'first' | 'last';
+export type QuoteYear = number | YearAlias;
 
 @Injectable()
 export class QuoteService {
@@ -54,13 +57,6 @@ export class QuoteService {
     });
   }
 
-  async getPageByRating(page: number, dir: OrderDirection = 'DESC') {
-    return this.getPage(page, {
-      field: 'rating',
-      dir,
-    });
-  }
-
   getPage(page: number, order = defaultOrder) {
     if (page < 1) {
       throw new BadRequestException('Page should be greater than 1.');
@@ -79,6 +75,8 @@ export class QuoteService {
           listBuilder.andWhere(...option);
         });
       }
+    } else if (options.where) {
+      listBuilder.where(options.where);
     }
 
     listBuilder
@@ -173,5 +171,48 @@ export class QuoteService {
     }
 
     return quote;
+  }
+
+  async byYear(year: QuoteYear, page: number, order: Order) {
+    const where = await this.buildYearParam(year);
+    console.log(where);
+    const options: QueryOptions = {
+      ...this.order(order),
+      where,
+    };
+
+    return this.query(page, options);
+  }
+
+  private async buildYearParam(year: QuoteYear): Promise<QueryOptions['where']> {
+    console.log(year);
+    const realYear: number = await this.resolveYear(year);
+    console.log(realYear);
+    const startDate = new Date(Date.UTC(realYear, 0, 0, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(realYear + 1, 0, 0, 0, 0, 0, 0));
+
+    endDate.setUTCDate(endDate.getUTCDate() - 1);
+    console.log(startDate, endDate);
+
+    return {
+      date: Between(startDate, endDate),
+    };
+  }
+
+  private getYearByAlias(yearAlias: YearAlias): Promise<number> {
+    const select = yearAlias === 'last'
+      ? 'MAX(date) as date'
+      : 'MIN(date) as date';
+
+    return this.quotesRepository.createQueryBuilder()
+      .select([select])
+      .getRawOne<{ date: string }>()
+      .then(row => new Date(+row.date).getFullYear());
+  }
+
+  private async resolveYear(year: QuoteYear) {
+    if (typeof year === 'number') return year;
+
+    return this.getYearByAlias(year);
   }
 }
