@@ -4,9 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as express from 'express';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import * as http from 'http';
-import * as https from 'https';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
@@ -18,8 +15,9 @@ async function bootstrap() {
           cert: fs.readFileSync('./cert.crt'),
         }
       : undefined;
-  const server = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -31,13 +29,18 @@ async function bootstrap() {
   await app.init();
 
   if (IS_PRODUCTION) {
-    http.createServer(server).listen(80);
-    https.createServer(httpsOptions, server).listen(443);
+    const server = express();
+    server.all('*', (req, res) => {
+      const url = 'https' + req.url.substring('http'.length);
+      res.redirect(url);
+    });
+    server.listen(80);
+    await app.listen(443);
   } else {
     const configService = app.get(ConfigService);
     const APP_PORT = configService.get<number>('APP_PORT');
 
-    http.createServer(server).listen(APP_PORT);
+    await app.listen(APP_PORT);
     console.log(`Listening on port ${APP_PORT}`);
   }
 }
