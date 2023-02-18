@@ -33,6 +33,7 @@ async function bootstrap() {
     server.all('*', (req, res) => {
       const url = new URL(req.baseUrl, req.hostname)
       url.protocol = 'https';
+      console.log(url.toString());
 
       res.redirect(url.toString());
     });
