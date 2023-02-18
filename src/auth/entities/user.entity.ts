@@ -10,4 +10,10 @@ export class User {
 
   @Column()
   password: string;
+
+  withoutPassword() {
+    return {
+      username: this.username,
+    };
+  }
 }

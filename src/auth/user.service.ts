@@ -21,6 +21,10 @@ export class UserService {
     return this.users.save(user);
   }
 
+  async findOne(username: string) {
+    return this.users.findOneBy({ username });
+  }
+
   validateUser(username: string, password: string) {
     return this.users.findOneBy({ username, password });
   }

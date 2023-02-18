@@ -1,17 +1,21 @@
 import { PassportSerializer } from '@nestjs/passport';
-import { SessionStoredUser, User } from '../entity/user.entity';
-import { UsersService } from '../slices/users/users.service';
 import { Injectable } from '@nestjs/common';
+import { User } from './entities/user.entity';
+import { UserService } from './user.service';
+
+interface SessionStoredUser {
+  username: string;
+}
 
 @Injectable()
 export class SessionSerializer extends PassportSerializer {
-  constructor(private usersService: UsersService) {
+  constructor(private userService: UserService) {
     super();
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
   async deserializeUser(payload: SessionStoredUser, done: Function) {
-    const user = await this.usersService.findOne(payload.username);
+    const user = await this.userService.findOne(payload.username);
 
     if (user) {
       done(null, user);
