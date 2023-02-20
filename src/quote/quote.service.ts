@@ -52,7 +52,7 @@ export class QuoteService {
     }
 
     return this.query(page, {
-      where: [['to_tsvector("text") @@ plainto_tsquery(:query)', { query }]],
+      where: [['vector_for_index @@ plainto_tsquery(:query)', { query }]],
       ...this.order({ field: 'rating', dir: 'DESC' }),
     });
   }
