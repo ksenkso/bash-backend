@@ -8,6 +8,9 @@ export class Quote {
   @Column()
   text: string;
 
+  @Column({ type: 'tsvector', default: "to_tsvector('')" })
+  indexedText: any;
+
   @Column()
   rating: number;
 
