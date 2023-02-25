@@ -1,17 +1,19 @@
-import { Body, Controller, Post, UseGuards, Get, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { SessionGuard } from './session.guard';
+import { LocalGuard } from './local.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: UserService) {}
 
-  @UseGuards(AuthGuard('local'))
+  @UseGuards(LocalGuard)
   @Post('login')
-  async login(@Req() req) {
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  async login(@Req() req: Request) {
+    return req.user;
   }
 
   @Post()

@@ -2,8 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as session from 'express-session';
 import * as fs from 'fs';
 import * as express from 'express';
+import * as passport from 'passport';
 
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
@@ -24,9 +26,22 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  app.enableCors();
-
-  await app.init();
+  app.enableCors({
+    credentials: true,
+  });
+  app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: IS_PRODUCTION,
+      httpOnly: true,
+      sameSite: 'none',
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    }
+  }));
+  app.use(passport.initialize())
+  app.use(passport.session());
 
   if (IS_PRODUCTION) {
     const server = express();

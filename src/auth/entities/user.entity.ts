@@ -13,6 +13,7 @@ export class User {
 
   withoutPassword() {
     return {
+      id: this.id,
       username: this.username,
     };
   }

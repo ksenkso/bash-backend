@@ -18,7 +18,7 @@ export class SessionSerializer extends PassportSerializer {
     const user = await this.userService.findOne(payload.username);
 
     if (user) {
-      done(null, user);
+      done(null, user.withoutPassword());
     } else {
       done(null, null);
     }
@@ -26,6 +26,6 @@ export class SessionSerializer extends PassportSerializer {
 
   // eslint-disable-next-line @typescript-eslint/ban-types
   serializeUser(user: User, done: Function) {
-    done(null, user.withoutPassword());
+    done(null, user);
   }
 }
